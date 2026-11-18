@@ -306,6 +306,10 @@ p { color: var(--text-secondary); }
 .thread-item:hover { border-color: var(--brand); background: var(--bg-elevated); }
 .thread-title { font-weight: 600; color: var(--text-primary); }
 .thread-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.thread-item-row { flex-direction: row; align-items: center; gap: 0.75rem; }
+.thread-item-link { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 0.5rem; color: inherit; text-decoration: none; }
+.thread-item-link > .flex { flex-wrap: wrap; gap: 0.4rem; }
+.thread-item-delete { flex: 0 0 auto; }
 
 .message-bubble {
   max-width: 70%; padding: 0.9rem 1.2rem;
@@ -709,6 +713,8 @@ p { color: var(--text-secondary); }
 
 @media (max-width: 600px) {
   .consent-heading { flex-direction: column; }
+  .thread-item-row { align-items: flex-start; padding: 1rem; }
+  .thread-item-delete { align-self: flex-start; }
   .referral-resource-list li { align-items: flex-start; flex-direction: column; }
   .grid-span-2 { grid-column: auto; }
 }

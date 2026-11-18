@@ -1,7 +1,6 @@
 "use client";
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ToastProvider";
 import Link from "next/link";
 
@@ -26,15 +25,21 @@ function StudentAppointmentsContent() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
-      const { data } = await supabase.from("appointments")
-        .select("*").eq("student_id", user.id).order("requested_at", { ascending: false });
-      setAppointments(data ?? []);
-      setLoading(false);
+      try {
+        const response = await fetch("/api/appointments", { cache: "no-store" });
+        if (response.status === 401) { router.push("/login"); return; }
+        const result = await response.json() as Appointment[] | { error?: string };
+        if (!response.ok) {
+          throw new Error(!Array.isArray(result) ? result.error : undefined);
+        }
+        setAppointments(Array.isArray(result) ? result : []);
+      } catch (error: unknown) {
+        showToast(error instanceof Error ? error.message : "Could not load appointment requests.", "error");
+      } finally {
+        setLoading(false);
+      }
     }
-    load();
+    void load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -43,25 +48,27 @@ function StudentAppointmentsContent() {
     if (!form.date || !form.time) { showToast("Date and time are required.", "error"); return; }
     setSubmitting(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const requested_at = `${form.date}T${form.time}:00`;
-      const { data, error } = await supabase.from("appointments")
-        .insert({ student_id: user.id, requested_at, notes: form.notes, status: "pending" })
-        .select().single();
-      if (error) throw error;
-      setAppointments(prev => [data, ...prev]);
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const result = await response.json() as Appointment | { error?: string };
+      if (!response.ok || !("id" in result)) {
+        throw new Error("error" in result ? result.error : undefined);
+      }
+      setAppointments(prev => [result, ...prev]);
       setForm({ date: "", time: "", notes: "" });
       showToast("Appointment requested!", "success");
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : "Could not request appointment.", "error");
+      showToast(err instanceof Error ? err.message : "Could not request appointment. Please try again.", "error");
     } finally { setSubmitting(false); }
   }
 
   const statusClass: Record<string, string> = {
     pending: "badge-warning", confirmed: "badge-success", declined: "badge-danger"
   };
+  const todayInBsc = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split("T")[0];
 
   return (
     <main className="page" style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -79,7 +86,7 @@ function StudentAppointmentsContent() {
               <label className="form-label" htmlFor="appt-date">Date</label>
               <input id="appt-date" className="form-input" type="date"
                 value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                min={new Date().toISOString().split("T")[0]} />
+                min={todayInBsc} />
             </div>
             <div className="form-group">
               <label className="form-label" htmlFor="appt-time">Time</label>

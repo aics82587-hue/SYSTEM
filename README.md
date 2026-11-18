@@ -39,4 +39,8 @@ must be provisioned by an administrator. After migration 010 completes, run
 `011_dark_theme_default.sql` to make dark mode the default for new and existing
 accounts while preserving explicit light or dark selections. Then run
 `012_counselor_acknowledgments.sql` to create the separate counselor
-responsibility acknowledgment table and its row-level security policies.
+responsibility acknowledgment table and its row-level security policies. Run
+`013_student_appointment_requests.sql` to apply the student appointment
+request policies and authenticated table grants. Finally, run
+`014_soft_delete_conversations.sql` to allow a student or counselor to hide a
+conversation for both participants while retaining its database records.

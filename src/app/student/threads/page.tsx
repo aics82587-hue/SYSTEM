@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import type { AppRole } from "@/lib/identity";
+import { ConversationDeleteButton } from "@/components/ConversationDeleteButton";
 
 export default async function StudentThreadsPage() {
   const supabase = await createClient();
@@ -41,15 +42,18 @@ export default async function StudentThreadsPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {threads.map(t => (
-                <Link key={t.id} href={`/student/threads/${t.id}`} className="thread-item">
-                  <div className="flex items-center justify-between">
-                    <span className="thread-title">{t.title}</span>
-                    <span className={`badge ${t.visibility === "shared" ? "badge-brand" : "badge-muted"}`}>
-                      {t.visibility === "shared" ? "🔓 Shared with counselor" : "🔒 Private"}
-                    </span>
-                  </div>
-                  <span className="text-muted text-sm">{new Date(t.created_at).toLocaleDateString()}</span>
-                </Link>
+                <article key={t.id} className="thread-item thread-item-row">
+                  <Link href={`/student/threads/${t.id}`} className="thread-item-link">
+                    <div className="flex items-center justify-between">
+                      <span className="thread-title">{t.title}</span>
+                      <span className={`badge ${t.visibility === "shared" ? "badge-brand" : "badge-muted"}`}>
+                        {t.visibility === "shared" ? "🔓 Shared with counselor" : "🔒 Private"}
+                      </span>
+                    </div>
+                    <span className="text-muted text-sm">{new Date(t.created_at).toLocaleDateString()}</span>
+                  </Link>
+                  <ConversationDeleteButton threadId={t.id} />
+                </article>
               ))}
             </div>
           )}

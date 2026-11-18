@@ -76,8 +76,13 @@ export default function LoginPage() {
         setPrivacyNoticeOpen(true);
       } else if (role === selectedRole) {
         showToast("Welcome back!", "success");
-        setPendingDestination(role === "counselor" ? "/counselor" : "/student");
-        setPrivacyNoticeOpen(true);
+        const destination = role === "counselor" ? "/counselor" : "/student";
+        if (role === "counselor") {
+          router.replace(destination);
+        } else {
+          setPendingDestination(destination);
+          setPrivacyNoticeOpen(true);
+        }
       } else if (role === "student" || role === "counselor") {
         setError(
           `This account is registered as a ${role}. Please go back and use the ${

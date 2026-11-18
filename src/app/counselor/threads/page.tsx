@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
+import { ConversationDeleteButton } from "@/components/ConversationDeleteButton";
 
 export default async function CounselorThreadsPage() {
   const supabase = await createClient();
@@ -40,19 +41,22 @@ export default async function CounselorThreadsPage() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {threads.map((t: Record<string, unknown>) => (
-                <Link key={t.id as string} href={`/counselor/threads/${t.id}`} className="thread-item">
-                  <div className="flex items-center justify-between">
-                    <span className="thread-title">{t.title as string}</span>
-                    <span className="badge badge-brand">🔓 Shared</span>
-                  </div>
-                  <div className="thread-meta">
-                    <span className="text-muted">{(t.profiles as { public_name?: string })?.public_name ?? "Unknown"}</span>
-                    <span className="text-muted">·</span>
-                    <span className="text-muted">
-                      Shared {t.shared_at ? new Date(t.shared_at as string).toLocaleDateString() : "—"}
-                    </span>
-                  </div>
-                </Link>
+                <article key={t.id as string} className="thread-item thread-item-row">
+                  <Link href={`/counselor/threads/${t.id}`} className="thread-item-link">
+                    <div className="flex items-center justify-between">
+                      <span className="thread-title">{t.title as string}</span>
+                      <span className="badge badge-brand">🔓 Shared</span>
+                    </div>
+                    <div className="thread-meta">
+                      <span className="text-muted">{(t.profiles as { public_name?: string })?.public_name ?? "Unknown"}</span>
+                      <span className="text-muted">·</span>
+                      <span className="text-muted">
+                        Shared {t.shared_at ? new Date(t.shared_at as string).toLocaleDateString() : "—"}
+                      </span>
+                    </div>
+                  </Link>
+                  <ConversationDeleteButton threadId={t.id as string} />
+                </article>
               ))}
             </div>
           )}
