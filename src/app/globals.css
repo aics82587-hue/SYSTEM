@@ -51,7 +51,8 @@
   --shadow-md: 0 8px 24px rgba(36, 26, 53, 0.08);
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+:root:not([data-theme]) {
   color-scheme: dark;
   --brand: #a78bfa;
   --brand-dark: #7c3aed;
@@ -76,8 +77,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root[data-theme="system"],
-  :root:not([data-theme]) {
+  :root[data-theme="system"] {
     color-scheme: dark;
     --brand: #a78bfa;
     --brand-dark: #7c3aed;

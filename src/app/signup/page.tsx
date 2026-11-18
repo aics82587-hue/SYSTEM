@@ -24,7 +24,7 @@ export default function SignupPage() {
 
   /* ── Student fields ── */
   const [studentForm, setStudentForm] = useState({
-    studentId: "", birthdate: "", realName: "", nickname: "", penName: "",
+    studentId: "", birthdate: "", penName: "",
     avatarId: "lavender-cat" as AvatarId, email: "", password: "", confirmPassword: ""
   });
 
@@ -43,8 +43,7 @@ export default function SignupPage() {
     if (!STUDENT_ID_PATTERN.test(studentForm.studentId.trim()))
       e.studentId = "Use the format YYYY-number-AB (e.g. 2024-00001-AB).";
     if (!studentForm.birthdate) e.birthdate = "Birthdate is required.";
-    if (!studentForm.realName.trim()) e.realName = "Your real name is required for account management.";
-    const penNameError = validatePenName(studentForm.penName, studentForm.realName, studentForm.nickname);
+    const penNameError = validatePenName(studentForm.penName);
     if (penNameError) e.penName = penNameError;
     if (!studentForm.email.trim() || !studentForm.email.includes("@")) e.email = "Valid email required.";
     if (studentForm.password.length < 8) e.password = "Password must be at least 8 characters.";
@@ -77,8 +76,6 @@ export default function SignupPage() {
           emailRedirectTo,
           data: {
             role: selectedRole,
-            full_name: studentForm.realName.trim(),
-            nickname: studentForm.nickname.trim(),
             student_id: studentForm.studentId.trim(),
             birthdate: studentForm.birthdate,
             pen_name: studentForm.penName.trim(),
@@ -273,26 +270,12 @@ export default function SignupPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label" htmlFor="student-real-name">Real name</label>
-                  <input id="student-real-name" className="form-input" type="text" autoComplete="name" placeholder="Your name for account management"
-                    value={studentForm.realName} onChange={e => studentField("realName", e.target.value)} />
-                  {errors.realName && <span className="form-error">{errors.realName}</span>}
-                  <span className="form-hint">Only you and authorized Guidance Counselor/admin accounts can access this.</span>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label" htmlFor="nickname">Nickname (private, optional)</label>
-                  <input id="nickname" className="form-input" type="text" placeholder="Only visible to you and authorized staff"
-                    value={studentForm.nickname} onChange={e => studentField("nickname", e.target.value)} />
-                </div>
-
-                <div className="form-group">
                   <label className="form-label" htmlFor="pen-name">Pen name</label>
                   <input id="pen-name" className="form-input" type="text" autoComplete="off" maxLength={32}
                     placeholder="How you appear to other students"
                     value={studentForm.penName} onChange={e => studentField("penName", e.target.value)} />
                   {errors.penName && <span className="form-error">{errors.penName}</span>}
-                  <span className="form-hint">Must be unique and different from your real name. You can change it once every 30 days.</span>
+                  <span className="form-hint">Choose a unique, appropriate name and avoid using your real name. You can change it once every 30 days.</span>
                 </div>
                 <AvatarPicker value={studentForm.avatarId}
                   onChange={avatarId => studentField("avatarId", avatarId)} />

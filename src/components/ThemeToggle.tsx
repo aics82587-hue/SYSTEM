@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 type Theme = "system" | "light" | "dark";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
     async function loadPreference() {

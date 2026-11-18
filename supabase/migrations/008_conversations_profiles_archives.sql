@@ -4,7 +4,7 @@
 alter table public.profiles
   add column if not exists position text not null default 'Guidance Counselor',
   add column if not exists privacy_notice_seen_at timestamptz,
-  add column if not exists theme_preference text not null default 'system'
+  add column if not exists theme_preference text not null default 'dark'
     check (theme_preference in ('system', 'light', 'dark'));
 
 update public.profiles

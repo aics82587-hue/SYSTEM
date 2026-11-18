@@ -26,18 +26,11 @@ function normalizeIdentity(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-export function validatePenName(candidate: string, realName: string, nickname = ""): string | null {
+export function validatePenName(candidate: string): string | null {
   const trimmed = candidate.trim();
   if (trimmed.length < 3 || trimmed.length > 32) return "Use 3 to 32 characters.";
   if (!/^[\p{L}\p{N}][\p{L}\p{N} _.-]*$/u.test(trimmed)) return "Use letters, numbers, spaces, dots, dashes, or underscores.";
   const normalized = normalizeIdentity(trimmed);
   if (BLOCKED_PEN_NAME_TERMS.some(term => normalized.includes(term))) return "That pen name is not available. Please choose another.";
-  for (const privateName of [realName, nickname]) {
-    const privateNormalized = normalizeIdentity(privateName);
-    if (privateNormalized.length >= 3 &&
-      (normalized === privateNormalized || normalized.includes(privateNormalized) || privateNormalized.includes(normalized))) {
-      return "Choose a pen name that is not similar to your name or nickname.";
-    }
-  }
   return null;
 }

@@ -28,10 +28,13 @@ After the earlier migrations are applied, run `009_community_member_role.sql`
 as a separate SQL Editor execution and let it commit before running
 `010_consent_identity_referrals.sql`. This separation is required when the
 `profiles.role` column uses a PostgreSQL enum. Migration 010 adds student pen
-names and avatars, private identity data, consent history, the editable
+names and avatars, removes student real-name and nickname fields, retains
+restricted registration fields, and adds consent history, the editable
 MenTalks schedule, and counselor-to-student referrals with row-level security.
 It also normalizes ID columns in earlier text-based referral drafts to UUIDs
 before creating policies that compare them with authenticated user IDs, and
 explicitly casts `auth.uid()` to UUID in migration policy/function expressions.
 The current public signup flow is for students; Guidance Counselor accounts
-must be provisioned by an administrator.
+must be provisioned by an administrator. After migration 010 completes, run
+`011_dark_theme_default.sql` to make dark mode the default for new and existing
+accounts while preserving explicit light or dark selections.

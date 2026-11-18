@@ -10,33 +10,80 @@ alter table public.profiles
 
 create table if not exists public.profile_private (
   user_id uuid primary key references public.profiles(id) on delete cascade,
-  real_name text not null,
-  nickname text,
   student_id text,
   birthdate date,
   created_at timestamptz not null default now()
 );
 alter table public.profile_private enable row level security;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profile_private' and column_name = 'real_name'
+  ) then
+    execute 'alter table public.profile_private alter column real_name drop not null';
+  end if;
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profile_private' and column_name = 'nickname'
+  ) then
+    execute 'alter table public.profile_private alter column nickname drop not null';
+  end if;
+end;
+$$;
 
-insert into public.profile_private (user_id, real_name, nickname, student_id, birthdate)
-select p.id, coalesce(nullif(p.nickname, ''), 'Mentalks member'), p.nickname, p.student_id, p.birthdate
+insert into public.profile_private (user_id, student_id, birthdate)
+select p.id, p.student_id, p.birthdate
 from public.profiles p
-on conflict (user_id) do nothing;
+on conflict (user_id) do update
+set student_id = excluded.student_id,
+    birthdate = excluded.birthdate;
 
-update public.profiles
-set pen_name = coalesce(pen_name, 'BSC Member ' || upper(substr(replace(id::text, '-', ''), 1, 8))),
-    public_name = case when role::text = 'student'
-      then coalesce(pen_name, 'BSC Member ' || upper(substr(replace(id::text, '-', ''), 1, 8)))
-      else coalesce(nullif(public_name, ''), nullif(nickname, ''), 'BSC Community Member')
-    end,
-    position = case when role::text = 'counselor'
-      then coalesce(nullif(position, ''), 'Guidance Counselor')
-      when role::text = 'community_member'
-      then coalesce(nullif(position, ''), 'BSC Community Member')
-      else position
-    end
-where role::text = 'student'
-   or public_name is null;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'nickname'
+  ) then
+    execute $migration$
+      update public.profiles
+      set pen_name = coalesce(pen_name, 'BSC Member ' || upper(substr(replace(id::text, '-', ''), 1, 8))),
+          public_name = case when role::text = 'student'
+            then coalesce(pen_name, 'BSC Member ' || upper(substr(replace(id::text, '-', ''), 1, 8)))
+            else coalesce(nullif(public_name, ''), nullif(nickname, ''), 'BSC Community Member')
+          end,
+          position = case when role::text = 'counselor'
+            then coalesce(nullif(position, ''), 'Guidance Counselor')
+            when role::text = 'community_member'
+            then coalesce(nullif(position, ''), 'BSC Community Member')
+            else position
+          end
+      where role::text = 'student' or public_name is null
+    $migration$;
+  else
+    update public.profiles
+    set pen_name = coalesce(pen_name, 'BSC Member ' || upper(substr(replace(id::text, '-', ''), 1, 8))),
+        public_name = case when role::text = 'student'
+          then coalesce(pen_name, 'BSC Member ' || upper(substr(replace(id::text, '-', ''), 1, 8)))
+          else coalesce(nullif(public_name, ''), 'BSC Community Member')
+        end,
+        position = case when role::text = 'counselor'
+          then coalesce(nullif(position, ''), 'Guidance Counselor')
+          when role::text = 'community_member'
+          then coalesce(nullif(position, ''), 'BSC Community Member')
+          else position
+        end
+    where role::text = 'student' or public_name is null;
+  end if;
+end;
+$$;
+
+update auth.users u
+set raw_user_meta_data = coalesce(u.raw_user_meta_data, '{}'::jsonb) - 'full_name' - 'nickname'
+where exists (
+  select 1 from public.profiles p
+  where p.id = u.id and p.role::text = 'student'
+);
 
 create unique index if not exists profiles_pen_name_lower_unique
   on public.profiles (lower(btrim(pen_name)))
@@ -323,7 +370,7 @@ grant select, insert, update on public.referrals to authenticated;
 revoke all on public.referral_messages from anon, authenticated;
 grant select, insert on public.referral_messages to authenticated;
 
-create or replace function public.is_valid_pen_name(_candidate text, _real_name text, _nickname text)
+create or replace function public.is_valid_pen_name(_candidate text)
 returns boolean
 language plpgsql
 immutable
@@ -331,8 +378,6 @@ set search_path = ''
 as $$
 declare
   _normalized text := lower(regexp_replace(coalesce(btrim(_candidate), ''), '[^a-z0-9]', '', 'g'));
-  _real_normalized text := lower(regexp_replace(coalesce(_real_name, ''), '[^a-z0-9]', '', 'g'));
-  _nickname_normalized text := lower(regexp_replace(coalesce(_nickname, ''), '[^a-z0-9]', '', 'g'));
 begin
   if length(btrim(coalesce(_candidate, ''))) < 3 or length(btrim(_candidate)) > 32 then
     return false;
@@ -346,19 +391,10 @@ begin
   if _normalized ~ '(admin|moderator|counselor|guidance|official|anonymous|support)' then
     return false;
   end if;
-  if length(_real_normalized) >= 3 and
-    (_normalized = _real_normalized or position(_normalized in _real_normalized) > 0
-      or position(_real_normalized in _normalized) > 0) then
-    return false;
-  end if;
-  if length(_nickname_normalized) >= 3 and
-    (_normalized = _nickname_normalized or position(_normalized in _nickname_normalized) > 0
-      or position(_nickname_normalized in _normalized) > 0) then
-    return false;
-  end if;
   return true;
 end;
 $$;
+drop function if exists public.is_valid_pen_name(text, text, text);
 
 create or replace function public.protect_profile_identity()
 returns trigger
@@ -366,9 +402,6 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  _real_name text;
-  _nickname text;
 begin
   if tg_op = 'UPDATE' then
     if new.role is distinct from old.role
@@ -386,11 +419,9 @@ begin
         and now() < old.pen_name_changed_at + interval '30 days' then
         raise exception 'Pen names can be changed once every 30 days.';
       end if;
-      select pp.real_name, pp.nickname into _real_name, _nickname
-      from public.profile_private pp where pp.user_id = old.id;
       if new.role::text <> 'student'
-        or not public.is_valid_pen_name(new.pen_name, _real_name, _nickname) then
-        raise exception 'Choose a pen name that is 3–32 characters, appropriate, and not similar to your name.';
+        or not public.is_valid_pen_name(new.pen_name) then
+        raise exception 'Choose a unique, appropriate pen name that is 3–32 characters.';
       end if;
       new.pen_name_changed_at := now();
       new.public_name := new.pen_name;
@@ -402,7 +433,6 @@ begin
     end if;
     if (
       new.public_name is distinct from old.public_name
-      or new.nickname is distinct from old.nickname
       or new.student_id is distinct from old.student_id
       or new.birthdate is distinct from old.birthdate
     ) and coalesce(auth.role(), '') <> 'service_role'
@@ -411,11 +441,10 @@ begin
         new.role::text = 'student'
         and new.pen_name is distinct from old.pen_name
         and new.public_name is not distinct from new.pen_name
-        and new.nickname is not distinct from old.nickname
         and new.student_id is not distinct from old.student_id
         and new.birthdate is not distinct from old.birthdate
       ) then
-      raise exception 'Private identity details can only be changed by an administrator.';
+      raise exception 'Student registration details can only be changed by an administrator.';
     end if;
   elsif tg_op = 'INSERT' then
     if new.avatar_id not in ('lavender-cat', 'sleepy-bear', 'soft-fox', 'cloud-bunny',
@@ -630,10 +659,8 @@ set search_path = ''
 as $$
 declare
   _role text;
-  _nickname text;
   _public_name text;
   _position text;
-  _real_name text;
   _pen_name text;
   _avatar_id text;
   _choices jsonb;
@@ -642,8 +669,6 @@ declare
 begin
   _role := coalesce(nullif(new.raw_user_meta_data ->> 'role', ''), 'student');
   if _role <> 'student' then _role := 'student'; end if;
-  _real_name := coalesce(nullif(btrim(new.raw_user_meta_data ->> 'full_name'), ''), nullif(btrim(new.raw_user_meta_data ->> 'nickname'), ''));
-  _nickname := coalesce(nullif(btrim(new.raw_user_meta_data ->> 'nickname'), ''), _real_name, 'BSC member');
   _pen_name := nullif(btrim(new.raw_user_meta_data ->> 'pen_name'), '');
   _avatar_id := coalesce(nullif(new.raw_user_meta_data ->> 'avatar_id', ''), 'lavender-cat');
   _public_name := _pen_name;
@@ -651,13 +676,10 @@ begin
   _choices := new.raw_user_meta_data -> 'consent_choices';
   _version := nullif(new.raw_user_meta_data ->> 'consent_version', '');
 
-  if _real_name is null or length(_real_name) > 120 then
-    raise exception 'Enter your name to create an account.';
-  end if;
   if _role = 'student' and (
-    _pen_name is null or not public.is_valid_pen_name(_pen_name, _real_name, _nickname)
+    _pen_name is null or not public.is_valid_pen_name(_pen_name)
   ) then
-    raise exception 'Choose an appropriate pen name that is not similar to your name.';
+    raise exception 'Choose a unique, appropriate pen name that is 3–32 characters.';
   end if;
   if _avatar_id not in ('lavender-cat', 'sleepy-bear', 'soft-fox', 'cloud-bunny',
     'little-owl', 'sunny-flower', 'tiny-cactus', 'moon-panda') then
@@ -683,26 +705,23 @@ begin
     and not a.attisdropped;
 
   execute format(
-    'insert into public.profiles (id, student_id, birthdate, nickname, role, position, pen_name, public_name, avatar_id)
-     values ($1, $2, $3, $4, $5::%s, $6, $7, $8, $9)
+    'insert into public.profiles (id, student_id, birthdate, role, position, pen_name, public_name, avatar_id)
+     values ($1, $2, $3, $4::%s, $5, $6, $7, $8)
      on conflict (id) do nothing',
     _role_type
   )
   using new.id,
     nullif(new.raw_user_meta_data ->> 'student_id', ''),
     nullif(new.raw_user_meta_data ->> 'birthdate', '')::date,
-    _nickname,
     _role,
     _position,
     _pen_name,
     _public_name,
     _avatar_id;
 
-  insert into public.profile_private (user_id, real_name, nickname, student_id, birthdate)
+  insert into public.profile_private (user_id, student_id, birthdate)
   values (
     new.id,
-    _real_name,
-    _nickname,
     nullif(new.raw_user_meta_data ->> 'student_id', ''),
     nullif(new.raw_user_meta_data ->> 'birthdate', '')::date
   )
@@ -711,6 +730,32 @@ begin
   insert into public.consent_records (user_id, version, event_type, choices)
   values (new.id, _version, 'accepted', _choices);
   return new;
+end;
+$$;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profile_private' and column_name = 'real_name'
+  ) then
+    execute 'update public.profile_private set real_name = null';
+    alter table public.profile_private drop column real_name;
+  end if;
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profile_private' and column_name = 'nickname'
+  ) then
+    execute 'update public.profile_private set nickname = null';
+    alter table public.profile_private drop column nickname;
+  end if;
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'nickname'
+  ) then
+    execute 'update public.profiles set nickname = null';
+    alter table public.profiles drop column nickname;
+  end if;
 end;
 $$;
 

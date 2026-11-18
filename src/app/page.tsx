@@ -102,7 +102,7 @@ export default async function HomePage() {
         <article className="home-principle">
           <span className="home-principle-icon"><FeatureIcon name="shield" /></span>
           <h2>Privacy comes first</h2>
-          <p>Your student pen name is shown to other members. Your real name and nickname stay private.</p>
+          <p>Only your pen name is shown to other members; signup does not ask for your real name or nickname.</p>
           <Link href="/privacy">Read the privacy notice</Link>
         </article>
         <article className="home-principle">
