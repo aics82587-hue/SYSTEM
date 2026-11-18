@@ -144,9 +144,14 @@ export async function POST(request: NextRequest) {
     .select("id, requested_at, notes, status")
     .single();
   if (error) {
-    console.error("Could not save student appointment request:", error.message);
+    console.error("Could not save student appointment request:", {
+      code: error.code,
+      message: error.message,
+    });
     return NextResponse.json(
-      { error: "Your appointment request could not be saved. Please try again." },
+      {
+        error: `Your appointment request could not be saved${error.code ? ` (database code: ${error.code})` : ""}. Please try again.`,
+      },
       { status: 500 },
     );
   }
