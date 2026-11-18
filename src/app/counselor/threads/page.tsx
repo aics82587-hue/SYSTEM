@@ -55,7 +55,11 @@ export default async function CounselorThreadsPage() {
                       </span>
                     </div>
                   </Link>
-                  <ConversationDeleteButton threadId={t.id as string} />
+                  <ConversationDeleteButton
+                    threadId={t.id as string}
+                    viewerRole="counselor"
+                    isShared
+                  />
                 </article>
               ))}
             </div>

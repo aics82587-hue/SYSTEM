@@ -553,6 +553,7 @@ export default function CounselorMessagesPage() {
               flex: 1,
               display: "grid",
               gridTemplateColumns: selectedStudentId ? "360px 1fr" : "1fr",
+              gridTemplateRows: selectedStudentId ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
               gap: "1rem",
               minHeight: 0,
               paddingTop: "0.75rem",
@@ -1104,6 +1105,7 @@ export default function CounselorMessagesPage() {
               </div>
             ) : (
               <div
+                className="messages-empty-selection"
                 style={{
                   background: "var(--bg-card)",
                   border: "1px solid var(--border-light)",
@@ -1111,7 +1113,6 @@ export default function CounselorMessagesPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  padding: "2rem",
                 }}
               >
                 <div className="empty-state">

@@ -52,7 +52,11 @@ export default async function StudentThreadsPage() {
                     </div>
                     <span className="text-muted text-sm">{new Date(t.created_at).toLocaleDateString()}</span>
                   </Link>
-                  <ConversationDeleteButton threadId={t.id} />
+                  <ConversationDeleteButton
+                    threadId={t.id}
+                    viewerRole="student"
+                    isShared={t.visibility === "shared"}
+                  />
                 </article>
               ))}
             </div>

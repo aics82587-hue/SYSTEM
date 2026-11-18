@@ -455,7 +455,7 @@ p { color: var(--text-secondary); }
   .sidebar.mobile-open { display: flex; position: fixed; top: 64px; left: 0; bottom: 0; z-index: 150; width: 260px; box-shadow: var(--shadow-md); }
   .dashboard-main { padding: 1.25rem; }
   .messages-master-detail { grid-template-columns: minmax(0, 1fr) !important; overflow-y: auto; }
-  .messages-master-detail > div:last-child { min-height: 420px; }
+  .messages-master-detail > div:last-child:not(.messages-empty-selection) { min-height: 420px; }
   .notes-split { display: flex !important; flex-direction: column; height: auto !important; }
   .notes-split > .card { min-height: 300px; max-height: 55vh; }
   .message-bubble { max-width: 90%; }
@@ -608,6 +608,11 @@ p { color: var(--text-secondary); }
 .messages-master-detail .messages-search { width: 100%; margin-bottom: 0.35rem; }
 .messages-master-detail > div { min-width: 0; }
 .messages-master-detail .form-input { background: var(--bg-card); }
+.messages-master-detail > .messages-empty-selection { min-height: 0; padding: 0.75rem 1rem; }
+.messages-empty-selection .empty-state { gap: 0.4rem; padding: 0; }
+.messages-empty-selection .empty-state-icon { width: 40px; height: 40px; border-radius: 12px; }
+.messages-empty-selection .empty-state h3,
+.messages-empty-selection .empty-state p { margin: 0; }
 .conversation-page { width: min(100%, 860px); height: calc(100dvh - 12px); min-height: 420px; margin: 0 auto; padding: 1rem clamp(1rem, 3vw, 2rem); display: flex; flex-direction: column; overflow: hidden; }
 .conversation-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin: 0.25rem 0 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light); }
 .conversation-title { min-width: 0; flex: 1; }

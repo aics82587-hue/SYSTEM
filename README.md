@@ -47,4 +47,6 @@ conversation for both participants while retaining its database records. Run
 `015_appointments_schema_compat.sql` after migration 014 to reconcile older
 appointment tables that use `scheduled_at` and lack `requested_at` or `notes`.
 It backfills `requested_at` from `scheduled_at` when available and reloads the
-PostgREST schema cache.
+PostgREST schema cache. Then run `016_student_thread_archive.sql` to let
+students archive shared conversations from their own list without hiding them
+from the counselor.
