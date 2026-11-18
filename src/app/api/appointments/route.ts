@@ -58,9 +58,14 @@ export async function GET() {
     .eq("student_id", account.user.id)
     .order("requested_at", { ascending: false });
   if (error) {
-    console.error("Could not load student appointments:", error.message);
+    console.error("Could not load student appointments:", {
+      code: error.code,
+      message: error.message,
+    });
     return NextResponse.json(
-      { error: "Could not load your appointment requests. Please try again." },
+      {
+        error: `Could not load your appointment requests${error.code ? ` (database code: ${error.code})` : ""}. Please try again.`,
+      },
       { status: 500 },
     );
   }
