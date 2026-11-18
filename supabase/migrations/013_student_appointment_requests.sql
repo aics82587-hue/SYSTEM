@@ -50,3 +50,5 @@ create policy "Counselors update appointment status"
 revoke all on public.appointments from anon, authenticated;
 grant select, insert on public.appointments to authenticated;
 grant update (status) on public.appointments to authenticated;
+
+notify pgrst, 'reload schema';
