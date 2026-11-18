@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+
+# Local project documents
+CAPSTONE_PAPER_DRAFT.md
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
+
+# TypeScript build information
+*.tsbuildinfo
