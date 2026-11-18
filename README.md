@@ -41,6 +41,10 @@ accounts while preserving explicit light or dark selections. Then run
 `012_counselor_acknowledgments.sql` to create the separate counselor
 responsibility acknowledgment table and its row-level security policies. Run
 `013_student_appointment_requests.sql` to apply the student appointment
-request policies and authenticated table grants. Finally, run
+request policies and authenticated table grants. Then run
 `014_soft_delete_conversations.sql` to allow a student or counselor to hide a
-conversation for both participants while retaining its database records.
+conversation for both participants while retaining its database records. Run
+`015_appointments_schema_compat.sql` after migration 014 to reconcile older
+appointment tables that use `scheduled_at` and lack `requested_at` or `notes`.
+It backfills `requested_at` from `scheduled_at` when available and reloads the
+PostgREST schema cache.
