@@ -37,4 +37,6 @@ explicitly casts `auth.uid()` to UUID in migration policy/function expressions.
 The current public signup flow is for students; Guidance Counselor accounts
 must be provisioned by an administrator. After migration 010 completes, run
 `011_dark_theme_default.sql` to make dark mode the default for new and existing
-accounts while preserving explicit light or dark selections.
+accounts while preserving explicit light or dark selections. Then run
+`012_counselor_acknowledgments.sql` to create the separate counselor
+responsibility acknowledgment table and its row-level security policies.

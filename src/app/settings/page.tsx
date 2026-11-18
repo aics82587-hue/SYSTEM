@@ -29,6 +29,7 @@ export default function AccountSettingsPage() {
   const { showToast } = useToast();
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState<AppRole>("student");
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [nickname, setNickname] = useState("");
   const [avatarId, setAvatarId] = useState("lavender-cat");
   const [penName, setPenName] = useState("");
@@ -59,16 +60,19 @@ export default function AccountSettingsPage() {
       setPosition(profile?.position ?? "");
       setAvatarId(profile?.avatar_id ?? "lavender-cat");
       setEmail(user.email ?? "");
-      const { data: records, error: consentError } = await supabase.from("consent_records")
-        .select("version, event_type, choices, created_at").eq("user_id", user.id)
-        .order("created_at", { ascending: false }).limit(10);
-      if (consentError) {
-        showToast(`Could not load consent history: ${consentError.message}`, "error");
-      } else {
-        const history = (records ?? []) as ConsentRecord[];
-        setConsentHistory(history);
-        const accepted = history.find(record => record.event_type === "accepted");
-        if (accepted) setConsentChoices(accepted.choices);
+      setProfileLoaded(true);
+      if (profile?.role !== "counselor") {
+        const { data: records, error: consentError } = await supabase.from("consent_records")
+          .select("version, event_type, choices, created_at").eq("user_id", user.id)
+          .order("created_at", { ascending: false }).limit(10);
+        if (consentError) {
+          showToast(`Could not load consent history: ${consentError.message}`, "error");
+        } else {
+          const history = (records ?? []) as ConsentRecord[];
+          setConsentHistory(history);
+          const accepted = history.find(record => record.event_type === "accepted");
+          if (accepted) setConsentChoices(accepted.choices);
+        }
       }
     }
 
@@ -202,18 +206,22 @@ export default function AccountSettingsPage() {
                 <h2 className="settings-section-title"><FeatureIcon name="shield" size={19} /> Privacy</h2>
                 <p className="text-muted text-sm">Review how your information and conversations are handled.</p>
                 <Link href="/privacy" className="btn btn-secondary btn-sm">Read privacy notice</Link>
-                <h3 className="settings-section-title mt-2">Consent history</h3>
-                {!consentHistory.length ? <p className="text-muted text-sm">No consent record found.</p> : (
+                {profileLoaded && role !== "counselor" && (
                   <>
-                    <p className="text-muted text-sm">
-                      Latest: {consentHistory[0].event_type} · {consentHistory[0].version} · {new Date(consentHistory[0].created_at).toLocaleString()}
-                    </p>
-                    <ConsentForm choices={consentChoices} onChange={setConsentChoices} acknowledged
-                      readOnly />
-                    {consentHistory[0].event_type === "accepted" && (
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => void withdrawConsent()}>
-                        Withdraw consent
-                      </button>
+                    <h3 className="settings-section-title mt-2">Consent history</h3>
+                    {!consentHistory.length ? <p className="text-muted text-sm">No consent record found.</p> : (
+                      <>
+                        <p className="text-muted text-sm">
+                          Latest: {consentHistory[0].event_type} · {consentHistory[0].version} · {new Date(consentHistory[0].created_at).toLocaleString()}
+                        </p>
+                        <ConsentForm choices={consentChoices} onChange={setConsentChoices} acknowledged
+                          readOnly />
+                        {consentHistory[0].event_type === "accepted" && (
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => void withdrawConsent()}>
+                            Withdraw consent
+                          </button>
+                        )}
+                      </>
                     )}
                   </>
                 )}
