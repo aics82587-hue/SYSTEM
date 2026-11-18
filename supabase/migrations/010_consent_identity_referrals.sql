@@ -753,7 +753,6 @@ begin
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'profiles' and column_name = 'nickname'
   ) then
-    execute 'update public.profiles set nickname = null';
     alter table public.profiles drop column nickname;
   end if;
 end;
